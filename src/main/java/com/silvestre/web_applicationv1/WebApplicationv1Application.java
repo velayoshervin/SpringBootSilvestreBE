@@ -15,7 +15,7 @@ public class WebApplicationv1Application {
 	public static void main(String[] args) {
 
 
-		Dotenv dotenv = Dotenv.configure().load();
+
 
 		SpringApplication.run(WebApplicationv1Application.class, args);
 	}
