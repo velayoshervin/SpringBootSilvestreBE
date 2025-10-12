@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+<div class="container" style="position: relative;">
+    <div style="width: 100%; background: rgb(6, 6, 78); height: 300px; color: white ;padding-top: 20px;">
+        <h1 style="text-align: center;">Silvestre's Exquisite Events & Style </h1>
+    </div>
+    <div
+            style="border-radius: 8px;background-color: white; width: 50%; left:25%; padding:10px; position:absolute; top:150px; padding-left: 20px;">
+        <img src="">
+        <p>Hi <span th:text="${name}">,</span>,</p>
+        <p>To verify your account, kindly use the OTP below to complete your verification process.</p>
+        <h2><span th:text="${otp}"></span></h2>
+        <p>if you didn't request an otp, you can ignore this message.</p>
+        <h4>Cheers,</h4>
+        <p>Silvestre Team</p>
+        <div style=" background-color: rgb(6, 6, 78); border-bottom-left-radius: 8px; border-bottom-right-radius:
+            8px; padding: 2px; color: white; text-align: center; opacity: .9;">
+            <p>Silvestre</p>
+        </div>
+    </div>
+</div>
+</body>
+
+</html>

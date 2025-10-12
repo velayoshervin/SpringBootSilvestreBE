@@ -1,0 +1,62 @@
+TRUNCATE TABLE item_events, item , line_item;
+
+INSERT INTO item (name, description, price, per_unit_excess, category, type, pax) VALUES
+-- Platinum Package
+('Platinum Package', 'Full venue styling, catering, photo & video coverage', 250000, NULL, 'Full Package', 'package', 100),
+('Advanced Full Styling', 'Thematic stage & backdrop, VIP chairs, truss grid, artificial flowers, entrance tunnel, ceiling treatment', NULL, NULL, 'Styling', 'package', 100),
+('Catering Service', 'Complete catering setup, silverware, glassware, customizable menu, wine for toasting', NULL, 599, 'Catering', 'package', 100),
+('Photo & Video Coverage', 'Prenup & wedding coverage with albums, same day edit, drone shots, unlimited consultation', NULL, NULL, 'Photo & Video', 'package', 100),
+
+-- Performers
+('Female Host: Uddie Bernardo', 'Professional female event host', 15000, NULL, 'Host', 'performer', 0),
+('Male Host: Charles Pabalate', 'Professional male event host', 8000, NULL, 'Host', 'performer', 0),
+('Emcee: Stephen Tierra', 'Master of ceremonies', 27000, NULL, 'Host', 'performer', 0),
+('Male Performer: Andy Pangan', 'Live music male performer', 15000, NULL, 'Performer', 'performer', 0),
+('Female Performer: Rizzia Alcantara', 'Live music female performer', 7000, NULL, 'Performer', 'performer', 0),
+
+-- Sounds & Lights
+('Sounds & Lights Package 1', 'Beam 360, 30 amber lights, LED wall (9x12), smoke/fog/haze', 27000, NULL, 'Sound System', 'add-on', 0),
+('Sounds & Lights Package 2', '8 Sharpy beam, pro lights, LED wall (9x24), light show, pro DJ', 70000, NULL, 'Sound System', 'add-on', 0),
+('LED Animation & Monogram', 'Custom LED animation and monogram', 2000, NULL, 'Lighting', 'add-on', 0),
+
+-- Food Enhancements
+('Grazing Table', 'Grazing table setup for guests', 25000, NULL, 'Food Enhancement', 'add-on', 100),
+('Coffee Bar "Deja Brew"', 'Coffee bar service', 12800, 95, 'Food Enhancement', 'add-on', 100),
+('Mobile Bar', 'Alcohol mobile bar service', 10500, NULL, 'Food Enhancement', 'add-on', 100),
+
+-- Coordination
+('On-the-Day Coordination', '5 coordinators with communication system', 18000, NULL, 'Coordination', 'add-on', 0),
+
+-- Hair & Makeup
+('Hair & Makeup: Justine Balagtas', 'Prenup + wedding hair & makeup', 19000, NULL, 'Hair & Makeup', 'add-on', 0),
+
+-- Church Flowers
+('Church Flower Setup - Basic', 'Basic church flower decoration', 15000, NULL, 'Styling', 'add-on', 0),
+('Church Flower Setup - Arc + Fresh', 'Arc + fresh flowers for church', 25000, NULL, 'Styling', 'add-on', 0),
+('Church Flower Setup - 3D Box + 20 Pews + Fresh', '3D box + 20 pews + fresh flowers', 50000, NULL, 'Styling', 'add-on', 0),
+
+-- Cakes
+('Cake - 5-layer w/ fondant', '5-layer cake with 2-tier fondant', 9000, NULL, 'Cakes', 'add-on', 0),
+('Cake - 3-layer full fondant', '3-layer full fondant cake', 7000, NULL, 'Cakes', 'add-on', 0),
+
+-- Flowers
+('Entourage Flowers - Imported', 'Imported flowers for entourage', 17000, NULL, 'Flowers', 'add-on', 0),
+('Entourage Flowers - Local', 'Local flowers for entourage', 12000, NULL, 'Flowers', 'add-on', 0),
+
+-- VIP Flowers
+('VIP Table Flowers - Fresh', 'Fresh flowers for VIP table', 15000, NULL, 'Flowers', 'add-on', 0),
+('VIP Table Flowers - Fresh Curve', 'Fresh curve flowers for VIP table', 30000, NULL, 'Flowers', 'add-on', 0),
+('VIP Table Flowers - Below Curve', 'Below curve VIP table flowers', 30000, NULL, 'Flowers', 'add-on', 0),
+
+-- Ceiling
+('Ceiling Upgrade 40x40 Trusses', 'Ceiling upgrade with 40x40 trusses', 35000, NULL, 'Ceiling', 'add-on', 0),
+('Ceiling Upgrade 40x60', 'Ceiling upgrade with 40x60 trusses', 70000, NULL, 'Ceiling', 'add-on', 0),
+('Ceiling Upgrade 40x80', 'Ceiling upgrade with 40x80 trusses', 105000, NULL, 'Ceiling', 'add-on', 0),
+
+-- Garden Weddings
+('Garden Wedding - Basic', 'Basic garden wedding setup', 20000, NULL, 'Styling', 'add-on', 0),
+('Garden Wedding - Prime Artificial', 'Prime artificial setup', 35000, NULL, 'Styling', 'add-on', 0),
+('Garden Wedding - Prime Fresh', 'Prime fresh setup', 65000, NULL, 'Styling', 'add-on', 0),
+
+-- Furniture
+('White Folding Chairs', 'Rental per piece', 65, NULL, 'Furniture', 'add-on', 1)
