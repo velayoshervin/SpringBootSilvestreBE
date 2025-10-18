@@ -42,7 +42,10 @@ public class SecurityConfig {
                 csrf(AbstractHttpConfigurer::disable)  // disable CSRF if you're building an API
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/public/**", "/h2-console/**", "/login", "/upload","/public/user/upload-avatar","/paymongo/**").permitAll()
+                        .requestMatchers("/public/**", "/h2-console/**", "/login", "/upload","/public/user/upload-avatar","/paymongo/**","/api/posts"
+                        ,"/api/featured-services",
+                                "/api/featured-services/**", "/api/menu-bundle"
+                        ).permitAll()
                         .anyRequest().authenticated())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session

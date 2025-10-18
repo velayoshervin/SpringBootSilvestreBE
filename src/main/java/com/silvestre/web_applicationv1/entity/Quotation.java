@@ -75,5 +75,9 @@ public class Quotation {
 
     private Long packageId;
 
+
+    //new
+    private Long menuBundleId;
+
     }
 

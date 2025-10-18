@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,5 +36,12 @@ public class PackageBundle {
     private List<Item> items = new ArrayList<>();
 
 
+    @Transient
+    public BigDecimal getTotalPrice() {
+        if (items == null || items.isEmpty()) return BigDecimal.ZERO;
+        return items.stream()
+                .map(Item::getPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 
 }

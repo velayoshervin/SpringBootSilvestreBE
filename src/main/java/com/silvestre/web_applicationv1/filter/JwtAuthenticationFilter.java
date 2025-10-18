@@ -38,6 +38,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         System.out.println("Path in shouldNotFilter: " + path);
 
         boolean shouldSkip = path.equals("/login")
+                || path.equals("/api/featured-services")
+                || path.startsWith("/api/featured-services/")
                 || path.equals("/register")
                 || path.startsWith("/public")
                 || path.equals("/upload")
