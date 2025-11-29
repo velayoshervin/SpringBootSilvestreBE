@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Component
+//@Component
 public class AdminUserInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;

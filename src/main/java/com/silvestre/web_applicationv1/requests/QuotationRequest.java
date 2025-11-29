@@ -1,5 +1,6 @@
 package com.silvestre.web_applicationv1.requests;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.silvestre.web_applicationv1.entity.QuotationLineItem;
 import com.silvestre.web_applicationv1.entity.User;
 import com.silvestre.web_applicationv1.enums.QuotationStatus;
@@ -19,6 +20,7 @@ public class QuotationRequest {
 
     private Long userId;
     private Long quotationId;
+
     private List<QuotationLineItem> lineItems;
     private LocalDate eventDate;
     private String eventType;
@@ -30,6 +32,7 @@ public class QuotationRequest {
     private String address;
     private Map<String, List<CustomFoodItem>> customFoodByCategory;
     private Long packageId;
+    private Long menuBundleId;
 
     @Getter
     @Setter

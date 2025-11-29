@@ -74,11 +74,11 @@ public class PaymentResponseDto {
         this.updatedAt = payment.getUpdatedAt();
 
         // ✅ Convert centavos → pesos
-        this.amount = toPesos(payment.getAmount());
-        this.fee = toPesos(payment.getFee());
-        this.netAmount = toPesos(payment.getNetAmount());
-        this.remainingBalance = toPesos(payment.getRemainingBalance());
-        this.totalDue = toPesos(payment.getTotalDue());
+        this.amount = payment.getAmount();
+        this.fee = payment.getFee();
+        this.netAmount = payment.getNetAmount();
+        this.remainingBalance = payment.getRemainingBalance();
+        this.totalDue = payment.getTotalDue();
 
         // ✅ Format dates
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy, hh:mm a")

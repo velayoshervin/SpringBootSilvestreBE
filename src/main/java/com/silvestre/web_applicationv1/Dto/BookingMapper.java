@@ -61,9 +61,9 @@ public class BookingMapper {
         dto.setId(payment.getId());
 
         // Convert amounts from centavos to real value
-        dto.setAmount(convertToRealValue(payment.getAmount()));
-        dto.setFee(convertToRealValue(payment.getFee()));
-        dto.setNetAmount(convertToRealValue(payment.getNetAmount()));
+        dto.setAmount(payment.getAmount());
+        dto.setFee(payment.getFee());
+        dto.setNetAmount(payment.getNetAmount());
 
         // Payment info
         dto.setStatus(payment.getStatus());

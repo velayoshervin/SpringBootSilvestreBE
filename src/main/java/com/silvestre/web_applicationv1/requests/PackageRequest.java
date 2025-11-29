@@ -14,5 +14,10 @@ public class PackageRequest {
         private List<String> imageUrls;
         private List<String> videoUrls;
         private List<Long> bundleIds;
+        private Long menuBundleId;
+        private Integer pax;
+        private Long grandTotal;
+        private Long menuBundlePrice;
+        private Long menuBundleTotal;
     }
 

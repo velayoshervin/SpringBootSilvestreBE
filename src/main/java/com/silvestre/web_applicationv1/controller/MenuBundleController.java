@@ -77,6 +77,7 @@ public class MenuBundleController {
         menuBundle.setIncludesWater(menuBundleDetails.isIncludesWater());
         menuBundle.setBasePrice(menuBundleDetails.getBasePrice());
         menuBundle.setActive(menuBundleDetails.isActive());
+        menuBundle.setPreselectedFoods(menuBundleDetails.getPreselectedFoods());
 
         MenuBundle updated = menuBundleRepository.save(menuBundle);
         return ResponseEntity.ok(updated);

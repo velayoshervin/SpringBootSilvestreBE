@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Link</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .header h1 {
+            color: #2c5aa0;
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333333;
+        }
+        .message {
+            font-size: 16px;
+            margin-bottom: 30px;
+            color: #555555;
+        }
+        .payment-button {
+            display: block;
+            width: 200px;
+            margin: 30px auto;
+            padding: 15px 30px;
+            background-color: #2c5aa0;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .payment-button:hover {
+            background-color: #1e3d6f;
+        }
+        .link-alternative {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666666;
+        }
+        .link-alternative a {
+            color: #2c5aa0;
+            word-break: break-all;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            border-top: 2px solid #f0f0f0;
+            color: #888888;
+            font-size: 12px;
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #2c5aa0;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Complete Your Payment</h1>
+    </div>
+
+    <div class="content">
+        <p class="greeting">Dear <span th:text="${customer}">Customer</span>,</p>
+
+        <p class="message">
+            Thank you for choosing our services! Your quotation is ready and awaiting payment
+            to confirm your booking.
+        </p>
+
+        <div class="instructions">
+            <h3>Next Steps:</h3>
+            <ol>
+                <li>Click the payment button below</li>
+                <li>Review your quotation details</li>
+                <li>Choose your preferred payment method</li>
+                <li>Complete the payment process</li>
+            </ol>
+        </div>
+
+        <a th:href="${link}" class="payment-button">Make Payment</a>
+
+        <div class="link-alternative">
+            <p>If the button doesn't work, copy and paste this link in your browser:</p>
+            <a th:href="${link}" th:text="${link}"></a>
+        </div>
+
+        <p class="message">
+            Please complete your payment within the specified timeframe to secure your booking.
+            If you have any questions, don't hesitate to contact us.
+        </p>
+    </div>
+
+    <div class="footer">
+        <p>This is an automated message. Please do not reply to this email.</p>
+        <p>If you didn't request this payment link, please ignore this email.</p>
+    </div>
+</div>
+</body>
+</html>

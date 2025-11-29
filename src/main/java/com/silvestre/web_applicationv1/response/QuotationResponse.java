@@ -4,6 +4,7 @@ package com.silvestre.web_applicationv1.response;
 
 
 import com.silvestre.web_applicationv1.Dto.UserDto;
+import com.silvestre.web_applicationv1.entity.BookingHistory;
 import com.silvestre.web_applicationv1.entity.QuotationLineItem;
 import com.silvestre.web_applicationv1.entity.Venue;
 import com.silvestre.web_applicationv1.enums.QuotationStatus;
@@ -38,6 +39,12 @@ public class QuotationResponse {
         private String address;
         private Map<String, List<CustomFoodItem>> customFoodByCategory;
         private Long packageId;
+        private LocalDate requestedToRescheduleTo;
+        private List<BookingHistory> history;
+
+        private String clientVenue;
+        private Long menuBundleId;
+        private LocalDateTime approvalTime;
 
         public QuotationResponse(Long quotationId, List<QuotationLineItem> lineItems,
                                  QuotationStatus status, LocalDateTime creationTime,
@@ -46,7 +53,9 @@ public class QuotationResponse {
                                  Integer pax, Venue venue, UserDto user,
                                  String celebrants, String customerName,
                                  String contactNumber, String address,
-                                 Map<String, List<CustomFoodItem>> customFoodByCategory, Long packageId) {
+                                 Map<String, List<CustomFoodItem>> customFoodByCategory, Long packageId, LocalDate rescheduleTo, List<BookingHistory> bookingHistoryList,
+                                 String clientVenue, Long menuBundleId, LocalDateTime approvalTime
+                                 ) {
                 this.quotationId = quotationId;
                 this.lineItems = lineItems;
                 this.status = status;
@@ -64,6 +73,12 @@ public class QuotationResponse {
                 this.address = address;
                 this.customFoodByCategory = customFoodByCategory;
                 this.packageId= packageId;
+                this.requestedToRescheduleTo = rescheduleTo;
+                this.history = bookingHistoryList;
+                this.clientVenue = clientVenue;
+                this.menuBundleId = menuBundleId;
+                this.approvalTime = approvalTime;
+
         }
 
         @Getter

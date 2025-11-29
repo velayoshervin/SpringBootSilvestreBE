@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CalendarAvailabilityService {
@@ -70,6 +71,31 @@ public class CalendarAvailabilityService {
         availability.setReason(reason);
 
         return calendarAvailabilityRepository.save(availability);
+    }
+
+    public CalendarAvailability reserveDate(LocalDate date) {
+
+
+        return calendarAvailabilityRepository.findById(date)
+                .map(existing -> {
+                    if ("RESCHEDULED".equals(existing.getStatus()) ||
+                            "AVAILABLE".equals(existing.getStatus()) ||
+                            "RESERVED_FOR_PAYMENT".equals(existing.getStatus())) {
+
+                        existing.setStatus("RESERVED_FOR_PAYMENT");
+                        existing.setReason("currently reserved until payment is made or payment time expired");
+                        return existing;
+                    } else {
+                        throw new IllegalStateException("Date " + date + " is not available for reservation. Current status: " + existing.getStatus());
+                    }
+                })
+                .orElseGet(() -> {
+                    return CalendarAvailability.builder()
+                            .date(date)
+                            .status("RESERVED_FOR_PAYMENT")
+                            .reason("currently reserved until payment is made or payment time expired")
+                            .build();
+                });
     }
 
 }

@@ -2,45 +2,41 @@ package com.silvestre.web_applicationv1.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.silvestre.web_applicationv1.Dto.UserDto;
-import com.silvestre.web_applicationv1.ExceptionHandler.QuotationAmountException;
+import com.silvestre.web_applicationv1.ExceptionHandler.ResourceNotFoundException;
+import com.silvestre.web_applicationv1.config.AdminConfig;
 import com.silvestre.web_applicationv1.entity.*;
+import com.silvestre.web_applicationv1.enums.BookingStatus;
 import com.silvestre.web_applicationv1.enums.PaymentStatus;
 import com.silvestre.web_applicationv1.enums.QuotationStatus;
 import com.silvestre.web_applicationv1.repository.*;
 import com.silvestre.web_applicationv1.requests.QuotationRequest;
 import com.silvestre.web_applicationv1.response.PaginatedResponse;
 import com.silvestre.web_applicationv1.response.QuotationResponse;
-import com.silvestre.web_applicationv1.service.CalendarAvailabilityService;
-import com.silvestre.web_applicationv1.service.QuotationService;
-import com.silvestre.web_applicationv1.service.UserService;
-import jakarta.servlet.http.HttpServletRequest;
+import com.silvestre.web_applicationv1.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import com.fasterxml.jackson.core.type.TypeReference;
-
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
+import java.time.OffsetDateTime;
 import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+
 
 @RestController
-@PreAuthorize("isAuthenticated()")
+//@PreAuthorize("isAuthenticated()")
 @RequestMapping("/quotations")
 public class QuotationController {
 
@@ -62,11 +58,55 @@ public class QuotationController {
     @Autowired
     private CalendarAvailabilityService calendarAvailabilityService;
 
+    @Autowired
+    private CalendarEventRepository calendarEventRepository;
+
 
     @Autowired
     private CalendarAvailabilityRepository calendarAvailabilityRepository;
 
+    @Autowired
+    private BookingHistoryRepository bookingHistoryRepository;
+
+    @Autowired
+    private BookingService bookingService;
+
+    @Autowired
+    private AdminConfig adminConfig;
+
+    @Autowired
+    private NotificationService notificationService;
+
+    @Autowired
+    private QuotationRedisService quotationRedisService;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
+
+
+    @PatchMapping("/{quotationId}/complete")
+    public ResponseEntity<?> completeQuotation(@PathVariable Long quotationId) {
+        try {
+            // Your service method to complete the quotation
+            Quotation completedQuotation = quotationService.completeQuotation(quotationId);
+
+            return ResponseEntity.ok(completedQuotation);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error completing quotation: " + e.getMessage());
+        }
+    }
+
+
+
+
+
+
+
+    @Transactional
     @PostMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> createQuotation(@RequestBody QuotationRequest payload)
     {
         System.out.println(payload);
@@ -82,6 +122,14 @@ public class QuotationController {
             venue = venueRepository.findById(payload.getVenueId())
                     .orElseThrow(() -> new RuntimeException("Venue not found"));
         }
+
+        if (payload.getEventDate() == null) {
+            throw new IllegalArgumentException("Date cannot be null");
+        }
+
+//        LocalDate date = payload.getEventDate();
+//
+//        CalendarAvailability calendarAvailability = calendarAvailabilityService.reserveDate(date);
 
 
         String customFoodJson = null;
@@ -106,6 +154,7 @@ public class QuotationController {
                 .address(payload.getAddress())
                 .customFoodSelection(customFoodJson).packageId(payload.getPackageId())
                 .status(QuotationStatus.SUBMITTED)
+                .menuBundleId(payload.getMenuBundleId())
                 .build();
 
 
@@ -126,10 +175,51 @@ public class QuotationController {
 
     quotationData.setTotal(computedAmount);
 
-    Quotation saved = quotationService.save(quotationData);
 
-    QuotationResponse response = mapToQuotationResponse(saved);
+        String description= "Booking created ";
+        BookingHistory bookingHistory= new BookingHistory();
+        bookingHistory.setQuotation(quotationData);
+        bookingHistory.setDescription(description);
+        bookingHistory.setAction("BOOKING CREATED");
 
+        quotationData.getHistory().add(bookingHistory);
+
+    Notification notification = new Notification();
+    notification.setUser(user);
+    notification.setTitle("Booking Created");
+    notification.setMessage("Thank you for submitting a booking request. Well notify you as soon as possible");
+    notification.setType("BOOKING CREATED");
+
+
+    User admin = userService.findUserById(adminConfig.getAdminId());
+
+    String customer = payload.getCustomerName();
+
+    Notification adminNotification = new Notification();
+    adminNotification.setType("BOOKING CREATED");
+    adminNotification.setUser(admin);
+    adminNotification.setTitle("Booking Submitted");
+    adminNotification.setMessage("A booking has been submitted");
+    adminNotification.setSender(customer);
+
+    notificationService.save(notification);
+    notificationService.save(adminNotification);
+
+
+        messagingTemplate.convertAndSendToUser(
+                user.getEmail(), // assuming userId is used as destination
+                "/queue/notifications",
+                notification
+        );
+
+        messagingTemplate.convertAndSendToUser(
+               admin.getEmail(), // assuming userId is used as destination
+                "/queue/notifications",
+                adminNotification
+        );
+        Quotation saved = quotationService.save(quotationData);
+//        calendarAvailabilityService.save(calendarAvailability);
+        QuotationResponse response = mapToQuotationResponse(saved);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -251,7 +341,7 @@ public class QuotationController {
     @GetMapping("/{userId}/{quotationId}")
     public ResponseEntity<?> findByQuotationId(@PathVariable Long userId, @PathVariable Long quotationId){
 
-       Quotation quotation = quotationService.findByIdAndUSerId(userId,quotationId);
+       Quotation quotation = quotationService.findByIdAndUSerId(quotationId,userId);
 
         return ResponseEntity.ok(mapToQuotationResponse(quotation));
     }
@@ -260,7 +350,7 @@ public class QuotationController {
         UserDto userDto = new UserDto(quotation.getUser());
 
         // Convert customFoodSelection JSON back to Map
-        Map<String, List<QuotationResponse.CustomFoodItem>> customFoodMap = null;
+        Map<String, List<QuotationResponse.CustomFoodItem>> customFoodMap = null;   
         if (quotation.getCustomFoodSelection() != null) {
             try {
                 ObjectMapper mapper = new ObjectMapper();
@@ -292,7 +382,12 @@ public class QuotationController {
                 quotation.getContactNumber(),
                 quotation.getAddress(),
                 customFoodMap,
-                quotation.getPackageId()
+                quotation.getPackageId(),
+                quotation.getRescheduleTo(),
+                quotation.getHistory(),
+                quotation.getClientVenue(),
+                quotation.getMenuBundleId(),
+                quotation.getApprovalTime()
         );
     }
 
@@ -317,6 +412,16 @@ public class QuotationController {
 
         Page<QuotationResponse> responsePage = quotationPage.map(this::mapToQuotationResponse);
         return ResponseEntity.ok(new PaginatedResponse<>(responsePage));
+    }
+
+    @GetMapping("/getGrossDue/{quotationId}")
+    public ResponseEntity<?> getGrossDue(@PathVariable Long quotationId){
+
+        //For simply getting total
+
+        Quotation quotation = quotationService.findById(quotationId);
+
+        return ResponseEntity.ok(quotation.getTotalAmount());
     }
 
     @GetMapping("/totalPayments")
@@ -344,84 +449,78 @@ public class QuotationController {
 
         return ResponseEntity.ok(mapToQuotationResponse(updated));
     }
-//    @Transactional
-//    @PatchMapping("/{quotationId}/date/{date}")
-//    public ResponseEntity<?> updateEventDate(
-//            @PathVariable Long quotationId,
-//            @PathVariable LocalDate date, HttpServletRequest request) { // eventDate is already a LocalDate from the path
-//
-//        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-//        System.out.println("Authentication: " + auth);
-//        System.out.println("Is Authenticated: " + auth.isAuthenticated());
-//        System.out.println("Principal: " + auth.getPrincipal());
-//        System.out.println("Authorities: " + auth.getAuthorities());
-//
-//        if (auth instanceof AnonymousAuthenticationToken) {
-//            return ResponseEntity.status(403).body("Not authenticated");
-//        }
-//
-//        try {
-//            Quotation quotation = quotationService.findById(quotationId);
-//            LocalDate oldDate = quotation.getRequestedEventDate();
-//
-//            // Business logic validations
-//            if (date.isBefore(LocalDate.now())) {
-//                return ResponseEntity.badRequest().body("Event date cannot be in the past");
-//            }
-//
-//            // Check if new date is available
-//            CalendarAvailability newDateAvailability = calendarAvailabilityRepository.findById(date).orElse(new CalendarAvailability());
-//            if ("BOOKED".equals(newDateAvailability.getStatus())) {
-//                return ResponseEntity.badRequest().body("Selected date is already booked");
-//            }
-//
-//            // Update Calendar Availability for OLD date - mark as available
-//            CalendarAvailability oldDateAvailability = calendarAvailabilityService.findByLocalDate(oldDate);
-//            if (oldDateAvailability != null) {
-//                oldDateAvailability.setStatus("AVAILABLE");
-//                oldDateAvailability.setReason("Rescheduled to " + date);
-//                calendarAvailabilityService.save(oldDateAvailability);
-//            }
-//
-//            // Update/Create Calendar Availability for NEW date - mark as booked
-//            if (newDateAvailability != null) {
-//                newDateAvailability.setStatus("BOOKED");
-//                newDateAvailability.setReason("Rescheduled from " + oldDate);
-//            } else {
-//                newDateAvailability = new CalendarAvailability();
-//                newDateAvailability.setDate(date);
-//                newDateAvailability.setStatus("BOOKED");
-//                newDateAvailability.setReason("Rescheduled from " + oldDate);
-//            }
-//            calendarAvailabilityService.save(newDateAvailability);
-//
-//            // Update the quotation
-//            quotation.setRequestedEventDate(date);
-//            quotation.setModificationTime(LocalDateTime.now());
-//
-//            Quotation updated = quotationService.save(quotation);
-//
-//            return ResponseEntity.ok(mapToQuotationResponse(updated));
-//
-//        } catch (RuntimeException e) {
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .body("Error updating event date: " + e.getMessage());
-//        }
-//    }
+
+        //The customer hit this endpoint to reschedule
+        @PreAuthorize("isAuthenticated()")
+        @Transactional
+        @PatchMapping("/{quotationId}/rescheduleTo")
+        public ResponseEntity<?> requestReschedule(@PathVariable Long quotationId, @RequestParam LocalDate date,
+        @RequestBody String reason
+        ){
+
+            if (date.isBefore(LocalDate.now())) {
+                return ResponseEntity.badRequest().body("Event date cannot be in the past");
+            }
+
+            Optional<CalendarAvailability> newDateAvailabilityOpt = calendarAvailabilityRepository.findById(date);
+
+            if (newDateAvailabilityOpt.isPresent()) {
+                CalendarAvailability existing = newDateAvailabilityOpt.get();
+                // Use the same status logic as your query
+                if (!"AVAILABLE".equals(existing.getStatus()) && !"RESCHEDULED".equals(existing.getStatus())) {
+                    return ResponseEntity.badRequest().body("Selected date is not available");
+                }
+            }
+
+            Quotation quotation= quotationService.findById(quotationId);
+            BookingHistory bookingHistory= new BookingHistory();
+            bookingHistory.setQuotation(quotation);
+
+
+
+            User sender = quotation.getUser();
+
+            String senderFullName = sender.getFirstname() + " "+ sender.getLastname();
+
+            String description=  senderFullName +" requests to reschedule from " + quotation.getRequestedEventDate() +" to "+
+                    date +" due to: " + reason;
+
+            bookingHistory.setAction("RESCHEDULE REQUEST");
+            bookingHistory.setDescription(description);
+            quotation.getHistory().add(bookingHistory);
+
+            quotation.setStatus(QuotationStatus.RESCHEDULE_REQUESTED);
+            quotation.setRescheduleTo(date);
+
+            Booking booking = bookingService.findByQuotation(quotation).orElseThrow(()-> new ResourceNotFoundException("quotation not found"));
+
+            booking.setBookingStatus(BookingStatus.RESCHEDULE_REQUESTED
+            );
+
+            Quotation updated = quotationService.save(quotation);
+            bookingService.save(booking);
+
+            System.out.println("adminConfig admin id = " + adminConfig.getAdminId());
+
+            String notificationType ="Reschedule request";
+            String title="Reschedule request";
+
+            notificationService.createAndSendNotificationToAdmin(description, adminConfig.getAdminId(),title,notificationType);
+
+
+        return ResponseEntity.ok(updated);
+        }
+
+
+
+@PreAuthorize("hasRole('ADMIN')")
 @Transactional
-@PatchMapping("/{quotationId}/date/{date}")
+@PatchMapping("/{quotationId}/date")
 public ResponseEntity<?> updateEventDate(
         @PathVariable Long quotationId,
-        @PathVariable LocalDate date, HttpServletRequest request) {
-
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    System.out.println("Authentication: " + auth);
-
-    if (auth instanceof AnonymousAuthenticationToken) {
-        return ResponseEntity.status(403).body("Not authenticated");
-    }
+        @RequestParam LocalDate date,
+        @RequestBody String description
+        ) {
 
     try {
         Quotation quotation = quotationService.findById(quotationId);
@@ -459,7 +558,6 @@ public ResponseEntity<?> updateEventDate(
             calendarAvailabilityRepository.save(oldDateAvailability);
         }
 
-        // Update/Create Calendar Availability for NEW date
         CalendarAvailability newDateAvailability;
         if (newDateAvailabilityOpt.isPresent()) {
             newDateAvailability = newDateAvailabilityOpt.get();
@@ -480,11 +578,69 @@ public ResponseEntity<?> updateEventDate(
 
         calendarAvailabilityRepository.save(newDateAvailability);
 
-        // Update the quotation
+        CalendarEvent existing =calendarEventRepository.findByQuotation(quotation).orElseThrow(()->
+                new ResourceNotFoundException("no event found")
+        );
+
+        OffsetDateTime start = existing.getStartTime();
+        OffsetDateTime end = existing.getEndTime();
+
+        OffsetDateTime newStart = start
+                .withYear(date.getYear())
+                .withMonth(date.getMonthValue())
+                .withDayOfMonth(date.getDayOfMonth());
+
+        OffsetDateTime newEnd = end
+                .withYear(date.getYear())
+                .withMonth(date.getMonthValue())
+                .withDayOfMonth(date.getDayOfMonth());
+
+        existing.setStartTime(newStart);
+        existing.setEndTime(newEnd);
+
+        calendarEventRepository.save(existing);
+
         quotation.setRequestedEventDate(date);
         quotation.setModificationTime(LocalDateTime.now());
 
+        BookingHistory bookingHistory = new BookingHistory();
+        bookingHistory.setQuotation(quotation);
+        bookingHistory.setAction("Rescheduled");
+        bookingHistory.setDescription("Booking has been rescheduled from " +quotation.getRequestedEventDate() +" to " +
+                date + "with NOTE: " + description);
+        quotation.getHistory().add(bookingHistory);
+        quotation.setStatus(QuotationStatus.BOOKED);
+
+        Booking booking = bookingService.findByQuotation(quotation).orElseThrow(
+                ()-> new ResourceNotFoundException("no booking found")
+        );
+
+
         Quotation updated = quotationService.save(quotation);
+
+        booking.setBookingStatus(BookingStatus.BOOKED);
+
+        bookingService.save(booking);
+
+
+        Notification notification =  new Notification();
+        notification.setTitle("Rescheduled");
+        notification.setUser(quotation.getUser());
+        notification.setMessage("Booking has been rescheduled from " +quotation.getRequestedEventDate() +" to " +
+                date + "with NOTE: " + description);
+        notification.setType("Reschedule");
+
+        notificationService.save(notification);
+
+        System.out.println("Rescheduling notification"+ quotation.getUser().getEmail());
+
+        messagingTemplate.convertAndSendToUser(
+                quotation.getUser().getEmail(), // assuming userId is used as destination
+                "/queue/notifications",
+                notification
+        );
+
+
 
         return ResponseEntity.ok(mapToQuotationResponse(updated));
 
@@ -500,6 +656,8 @@ public ResponseEntity<?> updateEventDate(
     }
 }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     @PatchMapping("/{quotationId}/pending-payment")
     public ResponseEntity<?> setPendingPayment(@PathVariable Long quotationId) {
         try {
@@ -514,8 +672,30 @@ public ResponseEntity<?> updateEventDate(
 
             quotation.setStatus(QuotationStatus.PENDING_PAYMENT);
             quotation.setModificationTime(LocalDateTime.now());
+            quotation.setApprovalTime(LocalDateTime.now().plusSeconds(60*30));
 
             Quotation updated = quotationService.save(quotation);
+
+            quotationRedisService.trackQuotationExpiration(quotationId,60*31);
+
+            Notification notification= new Notification();
+            notification.setType("PENDING PAYMENT");
+            notification.setUser(quotation.getUser());
+            notification.setTitle("Payment Pending");
+
+            notification.setLink("/payment-options/"+quotationId);
+            notification.setMessage("Your quotation #" + quotationId + " is pending payment. Please pay within 30 minutes.");
+
+            notificationService.save(notification);
+
+            System.out.println("Notification for approving submitted:"+ quotation.getUser().getEmail());
+
+            messagingTemplate.convertAndSendToUser(
+                    quotation.getUser().getEmail(), // assuming userId is used as destination
+                    "/queue/notifications",
+                    notification
+            );
+
 
             return ResponseEntity.ok(mapToQuotationResponse(updated));
 
@@ -527,8 +707,11 @@ public ResponseEntity<?> updateEventDate(
         }
     }
 
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
     @PatchMapping("/{quotationId}/reject")
-    public ResponseEntity<?> rejectQuotation(@PathVariable Long quotationId) {
+    public ResponseEntity<?> rejectQuotation(@PathVariable Long quotationId, @RequestParam String description) {
         try {
             Quotation quotation = quotationService.findById(quotationId);
 
@@ -538,11 +721,38 @@ public ResponseEntity<?> updateEventDate(
                         "Cannot reject quotation. Quotation must be in SUBMITTED status. Current status: " + quotation.getStatus()
                 );
             }
-
             quotation.setStatus(QuotationStatus.REJECTED);
             quotation.setModificationTime(LocalDateTime.now());
 
+            BookingHistory bookingHistory= new BookingHistory();
+            bookingHistory.setQuotation(quotation);
+            bookingHistory.setDescription(description);
+            bookingHistory.setAction("REJECTED");
+
+            quotation.getHistory().add(bookingHistory);
+
             Quotation updated = quotationService.save(quotation);
+
+
+
+            Notification notification = new Notification();
+            notification.setType("REJECTED BOOKING");
+            notification.setMessage("Booking request was not approved with notes: " + description);
+            notification.setTitle("REJECTED BOOKING");
+            notification.setUser(quotation.getUser());
+
+            notificationService.save(notification);
+
+            System.out.println("Notification for rejecting submitted:"+ quotation.getUser().getEmail());
+
+
+            messagingTemplate.convertAndSendToUser(
+                    quotation.getUser().getEmail(), // assuming userId is used as destination
+                    "/queue/notifications",
+                    notification
+            );
+
+
 
             return ResponseEntity.ok(mapToQuotationResponse(updated));
 
@@ -554,4 +764,65 @@ public ResponseEntity<?> updateEventDate(
         }
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    @PatchMapping("/{quotationId}/reschedule/reject")
+    public ResponseEntity<?> rejectReschedule(
+            @PathVariable Long quotationId,
+            @RequestParam LocalDate selectedDate,
+            @RequestBody String notes
+    ) {
+        Quotation quotation = quotationService.findById(quotationId);
+
+        BookingHistory history = new BookingHistory();
+        history.setQuotation(quotation);
+        history.setAction("Reschedule Rejected");
+        history.setDescription("Attempted date: " + selectedDate + ". notes: " + notes);
+        quotation.getHistory().add(history);
+
+        quotation.setStatus(QuotationStatus.BOOKED);
+
+        Booking booking = bookingService.findByQuotation(quotation).orElseThrow(
+                ()-> new ResourceNotFoundException("no booking found")
+        );
+
+        booking.setBookingStatus(BookingStatus.BOOKED);
+
+        bookingService.save(booking);
+
+        quotationService.save(quotation);
+
+
+        Notification notification = new Notification();
+        notification.setType("REJECT RESCHEDULE");
+        notification.setMessage("Reschedule request was not approved with notes: " + notes);
+        notification.setTitle("REJECTED RESCHEDULE");
+        notification.setUser(quotation.getUser());
+
+        notificationService.save(notification);
+
+        System.out.println("Notification for rejecting submitted reschedule date:"+ quotation.getUser().getEmail());
+
+        messagingTemplate.convertAndSendToUser(
+                quotation.getUser().getEmail(), // assuming userId is used as destination
+                "/queue/notifications",
+                notification
+        );
+
+
+        return ResponseEntity.ok("Reschedule rejected successfully");
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/my-quotation-dates")
+    public List<LocalDate> getMyQuotationDates() {
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        UserDetails userDetails = (UserDetails) auth.getPrincipal();
+        User currentUser = userService.findByEmail(userDetails.getUsername());
+
+        return quotationService.getQuotationDatesByUserId(currentUser.getId());
+    }
+
 }
+

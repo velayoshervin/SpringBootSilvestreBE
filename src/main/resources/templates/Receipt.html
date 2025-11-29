@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Receipt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+        }
+        .header {
+            background: rgb(6, 6, 78);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .receipt-details {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 1px solid #e0e0e0;
+        }
+        .line-items-section {
+            margin: 20px 0;
+        }
+        .line-items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .line-items-table th {
+            background: #f0f0f0;
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+            font-weight: bold;
+        }
+        .line-items-table td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .amount-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border: 1px solid #e0e0e0;
+        }
+        .footer {
+            background: rgb(6, 6, 78);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .text-bold {
+            font-weight: bold;
+        }
+        .no-items {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+        }
+        .description {
+            background: #f0f8ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #007bff;
+        }
+        .line-items-total {
+            text-align: right;
+            margin-top: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1>Silvestre's Exquisite Events & Style</h1>
+        <h2>Payment Receipt</h2>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <p>Dear <span th:text="${customerName}">Customer</span>,</p>
+        <p>Thank you for your payment. Here is your receipt:</p>
+
+        <!-- Transaction Details -->
+        <div class="receipt-details">
+            <h3>Transaction Details</h3>
+            <p><strong>Transaction ID:</strong> <span th:text="${transactionId}">N/A</span></p>
+            <p><strong>Payment Date:</strong> <span th:text="${#temporals.format(paymentDate, 'MMMM dd, yyyy hh:mm a')}">N/A</span></p>
+            <p><strong>Payment Method:</strong> <span th:text="${paymentMethod}">N/A</span></p>
+        </div>
+
+        <!-- Description -->
+        <div th:if="${description != null and !description.isEmpty()}" class="description">
+            <h4>Description</h4>
+            <p th:text="${description}">Payment description</p>
+        </div>
+
+        <!-- Line Items -->
+        <div class="line-items-section" th:if="${lineItems != null and !lineItems.empty}">
+            <h3>Order Items</h3>
+            <table class="line-items-table">
+                <thead>
+                <tr>
+                    <th>Item Description</th>
+                    <th class="text-center">Quantity</th>
+                    <th class="text-right">Unit Price</th>
+                    <th class="text-right">Total</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${lineItems}">
+                    <td>
+                        <!-- Use description field since that's what you have -->
+                        <span th:text="${item.description != null} ? ${item.description} : 'Service'">Item</span>
+                        <!-- If you want to show item name, check if item exists -->
+                        <div th:if="${item.item != null and item.item.name != null}" style="font-size: 0.9em; color: #666;">
+                            <span th:text="${item.item.name}">Item Name</span>
+                        </div>
+                    </td>
+                    <td class="text-center" th:text="${item.quantity}">1</td>
+                    <td class="text-right">₱<span th:text="${#numbers.formatDecimal(item.priceAtQuotation, 1, 2)}">0.00</span></td>
+                    <td class="text-right">₱<span th:text="${#numbers.formatDecimal(item.priceAtQuotation * item.quantity, 1, 2)}">0.00</span></td>
+                </tr>
+                </tbody>
+            </table>
+
+            <!-- Total under Line Items -->
+            <div class="line-items-total" th:if="${Total != null and Total > 0}">
+                <strong>Order Total: ₱<span th:text="${#numbers.formatDecimal(Total, 1, 2)}">0.00</span></strong>
+            </div>
+        </div>
+
+        <!-- Show message if no line items -->
+        <div th:if="${lineItems == null or lineItems.empty}" class="no-items">
+            <p>No line items available for this transaction.</p>
+        </div>
+
+        <!-- Amount Breakdown -->
+        <div class="amount-section">
+            <h3>Payment Summary</h3>
+            <table style="width: 100%;">
+                <tr>
+                    <td>Amount Paid:</td>
+                    <td class="text-right text-bold">₱<span th:text="${#numbers.formatDecimal(amount, 1, 2)}">0.00</span></td>
+                </tr>
+                <tr th:if="${fee != null and fee > 0}">
+                    <td>Processing Fee:</td>
+                    <td class="text-right">₱<span th:text="${#numbers.formatDecimal(fee, 1, 2)}">0.00</span></td>
+                </tr>
+                <tr th:if="${netAmount != null}">
+                    <td><strong>Net Amount Received:</strong></td>
+                    <td class="text-right text-bold">₱<span th:text="${#numbers.formatDecimal(netAmount, 1, 2)}">0.00</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <p>If you have any questions about this receipt, please contact our support team.</p>
+
+        <p>Best regards,<br>
+            <strong>Silvestre's Exquisite Events & Style Team</strong></p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Silvestre's Exquisite Events & Style</p>
+        <p>Thank you for your business!</p>
+    </div>
+</div>
+</body>
+</html>

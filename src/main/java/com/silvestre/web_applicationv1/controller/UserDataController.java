@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,7 +24,7 @@ public class UserDataController {
     @Autowired
     private UserService userService;
 
-
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     public ResponseEntity<?> fetchCurrentUser() {
 

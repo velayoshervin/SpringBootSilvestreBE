@@ -1,6 +1,7 @@
 package com.silvestre.web_applicationv1.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -21,7 +22,8 @@ public class QuotationLineItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quotation_id")
-    @JsonBackReference
+
+    @JsonIgnore
     private Quotation quotation;
 
     private String description;

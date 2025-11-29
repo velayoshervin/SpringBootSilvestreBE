@@ -42,11 +42,11 @@ public class PaymentCustomerDto {
         this.statementDescriptor = payment.getStatementDescriptor();
         this.description = payment.getDescription();
         this.paymentType = payment.getPaymentType();
-        this.amountFormatted = BigDecimal.valueOf(payment.getAmount())
+        this.amountFormatted = payment.getAmount()
                 .movePointLeft(2); // divides by 100 accurately
-        this.remainingBalanceFormatted = BigDecimal.valueOf(payment.getRemainingBalance())
+        this.remainingBalanceFormatted = payment.getRemainingBalance()
                 .movePointLeft(2);
-        this.totalAmountDue = BigDecimal.valueOf(payment.getTotalDue())
+        this.totalAmountDue = payment.getTotalDue()
                 .movePointLeft(2);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy, hh:mm a")

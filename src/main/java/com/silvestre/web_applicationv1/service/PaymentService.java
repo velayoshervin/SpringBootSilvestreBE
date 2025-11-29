@@ -3,18 +3,20 @@ package com.silvestre.web_applicationv1.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.silvestre.web_applicationv1.ExceptionHandler.ResourceNotFoundException;
+import com.silvestre.web_applicationv1.config.AdminConfig;
 import com.silvestre.web_applicationv1.entity.*;
 import com.silvestre.web_applicationv1.enums.*;
 import com.silvestre.web_applicationv1.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.*;
 import java.util.List;
-import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 @RequiredArgsConstructor
@@ -38,9 +40,31 @@ public class PaymentService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private NotificationRepository notificationRepository;
+
+    @Autowired
+    private QuotationRedisService quotationRedisService;
+
+    @Autowired
+    private SimpMessagingTemplate simpMessagingTemplate;
+
+    @Autowired
+    private AdminConfig adminConfig;
+
+    @Autowired
+    private UserService userService;
+
+
+    @Autowired
+    private ScheduledNotificationService scheduledNotificationService;
+
     @Transactional(rollbackFor = Exception.class)
     public void processWebhook(String payload, String signature) throws Exception {
         // TODO: verify signature using webhook secret (important for security)
+
+
+
 
         JsonNode root = objectMapper.readTree(payload);
 
@@ -83,6 +107,14 @@ public class PaymentService {
         Long quotationId = Long.valueOf(quotationIdStr);
         Quotation quotation = quotationRepository.findById(quotationId)
                 .orElseThrow(() -> new RuntimeException("Quotation not found"));
+
+
+        quotationRedisService.removeQuotation(quotationId);
+
+        if(!quotationRedisService.isQuotationActive(quotationId)){
+            System.out.println("quotation ttl removed from redis");
+        }
+
         User user = quotation.getUser();
 
         // Map payment from webhook
@@ -110,7 +142,7 @@ public class PaymentService {
         BigDecimal totalPaid = paymentRepository.sumOfAllPaymentsForQuotation(quotation.getId(), PaymentStatus.PAID);
         if (totalPaid == null) totalPaid = BigDecimal.ZERO;
 
-        BigDecimal totalWithThisPayment = totalPaid.add(BigDecimal.valueOf(payment.getAmount()));
+        BigDecimal totalWithThisPayment = totalPaid.add(payment.getAmount());
         BigDecimal remainingBalance = quotationInCents.subtract(totalWithThisPayment);
 
         if ("paid".equalsIgnoreCase(status)) {
@@ -159,7 +191,7 @@ public class PaymentService {
                 case "refunded" -> payment.setStatus(PaymentStatus.REFUNDED);
             }
         }
-        payment.setRemainingBalance(remainingBalance.longValue());
+        payment.setRemainingBalance(remainingBalance);
 
 
         BigDecimal totalPaidInPesos = totalWithThisPayment.divide(BigDecimal.valueOf(100));
@@ -172,12 +204,16 @@ public class PaymentService {
         payment.setExternalReference(externalRef);
 
         BigDecimal totalAmount = quotation.getTotal().multiply(BigDecimal.valueOf(100));
-        payment.setTotalDue(totalAmount.longValue());
+        payment.setTotalDue(totalAmount);
 
 
         Long calendarId = 4L;
         CalendarCalendars calendarCalendars= calendarCalendarsRepository.findById(calendarId).orElseThrow(()->
                  new ResourceNotFoundException("calendar Id not found"));
+
+        AtomicBoolean isNewEvent= new AtomicBoolean(false);
+
+
         CalendarEvent calendarEvent = calendarEventRepository.findByQuotation(quotation)
                 .orElseGet(() -> {
                     CalendarEvent newEvent = new CalendarEvent();
@@ -185,7 +221,7 @@ public class PaymentService {
                     newEvent.setBooking(booking);
                     newEvent.setCalendar(calendarCalendars);
                     newEvent.setEventCreator(user);
-
+                    newEvent.setTitle(user.getFirstname() + "'s " + quotation.getEventType());
                     Invitation invitation = new Invitation();
                     invitation.setStatus(RSVP.INVITED);
                     invitation.setUser(user);
@@ -203,6 +239,8 @@ public class PaymentService {
                     adminInvite.setCalendarEvent(newEvent);
 
                     newEvent.setInvitations(List.of(invitation,adminInvite));
+
+                    isNewEvent.set(true);
 
                     return newEvent;
                 });
@@ -224,10 +262,48 @@ public class PaymentService {
         calendarEvent.setEndTime(endOfDay.atOffset(offset));
         calendarEvent.setAllDay(true);
 
-        calendarEventRepository.save(calendarEvent);
+         CalendarEvent calSaved=calendarEventRepository.save(calendarEvent);
+
+        if (isNewEvent.get()) {
+            scheduledNotificationService.scheduleEventNotifications(calSaved);
+        }
 
         booking.addPayment(payment);
         bookingService.save(booking);
+
+        Notification customerNotification = new Notification();
+        customerNotification.setType("PAYMENT NOTIFICATION");
+        customerNotification.setTitle("Payment has been received");
+        customerNotification.setMessage("Your payment for booking #" + quotation.getId() +" has been received");
+        customerNotification.setUser(quotation.getUser());
+
+
+
+        Notification adminNotification = new Notification();
+
+        User admin = userService.findUserById(adminConfig.getAdminId());
+        adminNotification.setTitle("Payment Received");
+
+        String customerName = quotation.getUser().getFirstname() + " " + quotation.getUser().getLastname();
+        adminNotification.setMessage("Payment received from " + customerName +" for booking "+ quotation.getId());
+        adminNotification.setUser(admin);
+        adminNotification.setType("PAYMENT NOTIFICATION");
+
+        notificationRepository.save(customerNotification);
+        notificationRepository.save(adminNotification);
+
+
+        simpMessagingTemplate.convertAndSendToUser(
+                quotation.getUser().getEmail(),               // username used in WebSocket session
+                "/queue/notifications",        // matches your @SendToUser
+                customerNotification
+        );
+
+        simpMessagingTemplate.convertAndSendToUser(
+                admin.getEmail(),               // username used in WebSocket session
+                "/queue/notifications",        // matches your @SendToUser
+                adminNotification
+        );
     }
 
     public Payments mapFlattenedWebhook(JsonNode json, User user, Quotation quotation) {
@@ -247,9 +323,9 @@ public class PaymentService {
         payment.setPaymentType("full"); // default
 
         // amounts
-        payment.setAmount(attributesNode.path("amount").asLong());
-        payment.setFee(attributesNode.path("fee").asLong());
-        payment.setNetAmount(attributesNode.path("net_amount").asLong());
+        payment.setAmount(BigDecimal.valueOf(attributesNode.path("amount").asLong()));
+        payment.setFee(BigDecimal.valueOf(attributesNode.path("fee").asLong()));
+        payment.setNetAmount(BigDecimal.valueOf(attributesNode.path("net_amount").asLong()));
         payment.setCurrency(attributesNode.path("currency").asText("PHP"));
 
         // description
@@ -278,6 +354,8 @@ public class PaymentService {
 
         return payment;
     }
+
+
 
 
 

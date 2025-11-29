@@ -1,5 +1,7 @@
 package com.silvestre.web_applicationv1.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.silvestre.web_applicationv1.enums.QuotationStatus;
 import jakarta.persistence.*;
@@ -10,6 +12,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -18,6 +21,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Quotation {
 
     @Id
@@ -31,7 +35,8 @@ public class Quotation {
 
     @JsonManagedReference
     @OneToMany(mappedBy = "quotation", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<QuotationLineItem> lineItems;
+    @Builder.Default
+    private List<QuotationLineItem> lineItems =new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     private QuotationStatus status; 
@@ -46,7 +51,6 @@ public class Quotation {
 
     private LocalDate requestedEventDate;
 
-    //adding pax, eventType, venue
 
     private Integer pax;
 
@@ -56,8 +60,15 @@ public class Quotation {
     @JoinColumn(name = "venue_id",nullable = true) // foreign key column in the quotation table
     private Venue venue;
 
+    private String clientVenue;
+
 
     public BigDecimal getTotalAmount() {
+
+        if (lineItems == null || lineItems.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
         return lineItems.stream()
                 .map(item -> item.getPriceAtQuotation().multiply(new BigDecimal(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -75,9 +86,44 @@ public class Quotation {
 
     private Long packageId;
 
-
     //new
     private Long menuBundleId;
 
+    @Column(nullable = true)
+    private LocalDateTime approvalTime;
+    @Column(nullable = true)
+    private LocalDateTime paymentDeadline;
+
+    @OneToMany(mappedBy = "quotation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<BookingHistory> history = new ArrayList<>();
+
+
+    private LocalDate rescheduleTo;
+
+
+
+    @OneToMany(mappedBy = "quotation")
+    @JsonBackReference
+    private List<Booking> bookings;
+
+
+
+    // Contract fields
+    private String contractPdfPath;
+    private String signedContractPdfPath;
+
+    @Column(columnDefinition = "TEXT")
+    private String signatureData; // Base64 signature image
+    private String signerName;
+    private LocalDateTime signedAt;
+    private Boolean contractSigned = false;
+
+    @Enumerated(EnumType.STRING)
+    private ContractStatus contractStatus = ContractStatus.PENDING;
     }
 
+
+enum ContractStatus {
+    PENDING, SENT, SIGNED, EXPIRED
+}

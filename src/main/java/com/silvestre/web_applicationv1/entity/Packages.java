@@ -48,6 +48,20 @@ public class Packages {
     )
     @Column(name = "photo_url")
     private List<String> photoImageUrls = new ArrayList<>();
+
+
+    @ManyToOne
+    @JoinColumn(name="menu_bundle_id")
+    private MenuBundle menuBundle;
+
+
+    private Integer pax;
+
+    private Long price;
+
+    private Long menuBundlePrice;
+
+    private Long menuBundleTotalPrice;
 }
 
 

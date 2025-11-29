@@ -10,6 +10,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
@@ -57,11 +58,11 @@ public class Payments {
     private String paymentType = "full"; // default value
 
     // amounts
-    private Long amount;            // centavos
-    private Long fee;
-    private Long netAmount;
-    private Long remainingBalance;
-    private Long totalDue;
+    private BigDecimal amount;            // centavos
+    private BigDecimal  fee;
+    private BigDecimal  netAmount;
+    private BigDecimal  remainingBalance;
+    private BigDecimal totalDue;
 
     private String currency = "PHP";
 

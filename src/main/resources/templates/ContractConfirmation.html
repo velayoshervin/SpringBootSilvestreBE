@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract Signed</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+        }
+        .header {
+            background: rgb(6, 6, 78);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .payment-terms {
+            background: #e8f5e8;
+            border-left: 4px solid #28a745;
+        }
+        .terms-conditions {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+        }
+        .signature {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+        }
+        .signature img {
+            max-width: 300px;
+            border: 1px solid #ddd;
+        }
+        .footer {
+            background: rgb(6, 6, 78);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .amount-highlight {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .terms-list {
+            padding-left: 20px;
+        }
+        .terms-list li {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <h1>✅ Contract Signed Successfully</h1>
+        <p>Silvestre's Exquisite Events & Style</p>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+        <p>Dear <span th:text="${customerName}">Customer</span>,</p>
+
+        <p>Thank you for signing your event contract. Here is a copy of your signed agreement:</p>
+
+        <!-- Contract Details -->
+        <div class="section">
+            <h3>📋 Contract Summary</h3>
+            <p><strong>Event Date:</strong> <span th:text="${#temporals.format(eventDate, 'MMMM dd, yyyy')}"></span></p>
+            <p><strong>Event Type:</strong> <span th:text="${eventType}"></span></p>
+            <p><strong>Venue:</strong> <span th:text="${venue}"></span></p>
+            <p><strong>Number of Guests:</strong> <span th:text="${pax}"></span></p>
+            <p><strong>Total Contract Amount:</strong> <span class="amount-highlight">₱<span th:text="${#numbers.formatDecimal(totalAmount, 1, 2)}"></span></span></p>
+        </div>
+
+        <!-- Payment Terms -->
+        <div class="section payment-terms">
+            <h3>💰 PAYMENT TERMS</h3>
+            <table>
+                <tr>
+                    <td><strong>Total Contract Amount:</strong></td>
+                    <td class="amount-highlight">₱<span th:text="${#numbers.formatDecimal(totalAmount, 1, 2)}">262,000.00</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Amount Paid:</strong></td>
+                    <td>₱<span th:text="${#numbers.formatDecimal(amountPaid, 1, 2)}">131,000.00</span> (<span th:text="${percentagePaid}">50</span>%)</td>
+                </tr>
+                <tr>
+                    <td><strong>Balance Due:</strong></td>
+                    <td class="amount-highlight">₱<span th:text="${#numbers.formatDecimal(balanceDue, 1, 2)}">131,000.00</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Balance Due Date:</strong></td>
+                    <td><span th:text="${#temporals.format(balanceDueDate, 'MMMM dd, yyyy')}">January 15, 2026</span></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Services -->
+        <div class="section" th:if="${lineItems != null and !lineItems.empty}">
+            <h3>🛠️ Services Included</h3>
+            <table>
+                <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${lineItems}">
+                    <td th:text="${item.description}">Service</td>
+                    <td th:text="${item.quantity}">1</td>
+                    <td>₱<span th:text="${#numbers.formatDecimal(item.priceAtQuotation, 1, 2)}">0.00</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Terms and Conditions -->
+        <div class="section terms-conditions">
+            <h3>📜 TERMS AND CONDITIONS</h3>
+            <ol class="terms-list">
+                <li>A non-refundable deposit of <strong>20%</strong> is required to secure your event date.</li>
+                <li>The remaining balance of ₱<span th:text="${#numbers.formatDecimal(balanceDue, 1, 2)}">131,000.00</span> is due on or before <span th:text="${#temporals.format(balanceDueDate, 'MMMM dd, yyyy')}">January 15, 2026</span>.</li>
+                <li>Any cancellation must be made in writing. Deposits are non-refundable.</li>
+                <li>Changes to event details or services may incur additional charges.</li>
+                <li>Final guest count must be confirmed 7 days before the event.</li>
+                <li>Setup and teardown times will be coordinated with the venue.</li>
+                <li>Client is responsible for any venue fees, permits, or licenses.</li>
+                <li>Force majeure events may result in rescheduling without penalty.</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h3>✍️ Signed By</h3>
+            <p><strong>Name:</strong> <span th:text="${signerName}"></span></p>
+            <p><strong>Signed On:</strong> <span th:text="${#temporals.format(signedAt, 'MMMM dd, yyyy hh:mm a')}"></span></p>
+
+            <div class="signature">
+                <h4>Your Actual Signature:</h4>
+                <div style="text-align: center; padding: 20px; background: white; border: 2px dashed #ccc; border-radius: 8px;">
+                    <!-- This will show the actual signature image -->
+                    <img src="cid:signatureImage"
+                         alt="Your Handwritten Signature"
+                         style="max-width: 400px; max-height: 150px; border: 1px solid #ddd;"/>
+                </div>
+                <p style="text-align: center; color: #666; font-size: 12px; margin-top: 10px;">
+                    <em>This is your actual handwritten signature as recorded in our system</em>
+                </p>
+            </div>
+        </div>
+
+
+<!--        <div class="section">-->
+<!--            <h3>✍️ Signed By</h3>-->
+<!--            <p><strong>Name:</strong> <span th:text="${signerName}"></span></p>-->
+<!--            <p><strong>Signed On:</strong> <span th:text="${#temporals.format(signedAt, 'MMMM dd, yyyy hh:mm a')}"></span></p>-->
+
+<!--            <div class="signature">-->
+<!--                <h4>Your Signature:</h4>-->
+<!--                <div style="text-align: center; padding: 20px; background: white; border: 2px dashed #ccc;">-->
+<!--                    &lt;!&ndash; Direct Base64 image &ndash;&gt;-->
+<!--                    <img th:if="${signatureData != null}"-->
+<!--                         th:src="${signatureData}"-->
+<!--                         alt="Your Signature"-->
+<!--                         style="max-width: 400px; border: 1px solid #ddd;"/>-->
+
+<!--                    &lt;!&ndash; Fallback if image doesn't load &ndash;&gt;-->
+<!--                    <div th:if="${signatureData == null}" style="color: #666; padding: 40px;">-->
+<!--                        <p>Signature image not available</p>-->
+<!--                        <p><strong>Signed by:</strong> <span th:text="${signerName}"></span></p>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--            </div>-->
+
+<!--        &lt;!&ndash; Signature &ndash;&gt;-->
+<!--        <div class="section">-->
+<!--            <h3>✍️ Signed By</h3>-->
+<!--            <p><strong>Name:</strong> <span th:text="${signerName}"></span></p>-->
+<!--            <p><strong>Signed On:</strong> <span th:text="${#temporals.format(signedAt, 'MMMM dd, yyyy hh:mm a')}"></span></p>-->
+
+<!--            <div class="signature">-->
+<!--                <h4>Digital Signature:</h4>-->
+<!--                <img th:src="${signatureData}" alt="Customer Signature" />-->
+<!--            </div>-->
+<!--        </div>-->
+
+        <!-- Next Steps -->
+        <div class="section">
+            <h3>📅 Next Steps</h3>
+            <p>Your event is now confirmed! We will contact you 30 days before your event to finalize details.</p>
+            <p>If you have any questions, please don't hesitate to contact us.</p>
+        </div>
+
+        <p>Best regards,<br>
+            <strong>Silvestre's Exquisite Events & Style Team</strong></p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Silvestre's Exquisite Events & Style</p>
+        <p>Thank you for choosing us for your special event!</p>
+    </div>
+</div>
+</body>
+</html>

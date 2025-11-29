@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract Confirmation - Silvestre Exquisite Style and Events</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 5px 5px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #e74c3c;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .button:hover {
+            background-color: #c0392b;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 14px;
+        }
+        .company-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>Contract Confirmation</h1>
+    <h2>Silvestre Exquisite Style and Events</h2>
+</div>
+
+<div class="content">
+    <p>Dear <span th:text="${customer}">Customer</span>,</p>
+
+    <p>Thank you for choosing <span class="company-name">Silvestre Exquisite Style and Events</span> for your special occasion!</p>
+
+    <p>We're excited to help bring your vision to life. Your contract is now ready for review and signature.</p>
+
+    <p>Please click the button below to review and sign your contract:</p>
+
+    <div style="text-align: center;">
+        <a th:href="${link}" class="button">Review & Sign Contract</a>
+    </div>
+
+    <p>This link will take you directly to your contract where you can:</p>
+    <ul>
+        <li>Review all terms and conditions</li>
+        <li>Verify event details and services</li>
+        <li>Provide your electronic signature</li>
+        <li>Submit the signed contract</li>
+    </ul>
+
+    <p><strong>Important:</strong> Please sign the contract within the next 7 days to secure your booking date.</p>
+
+    <p>If you have any questions or need to make changes to your contract, please don't hesitate to contact us.</p>
+
+    <p>Best regards,<br>
+        <strong>The Team at Silvestre Exquisite Style and Events</strong></p>
+</div>
+
+<div class="footer">
+    <p>Silvestre Exquisite Style and Events<br>
+        Creating unforgettable experiences with exquisite style</p>
+    <p>This is an automated message. Please do not reply to this email.</p>
+</div>
+</body>
+</html>

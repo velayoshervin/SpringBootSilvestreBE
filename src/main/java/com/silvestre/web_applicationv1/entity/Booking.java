@@ -1,5 +1,6 @@
 package com.silvestre.web_applicationv1.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.silvestre.web_applicationv1.enums.BookingStatus;
 import com.silvestre.web_applicationv1.enums.PaymentStatus;
@@ -20,6 +21,7 @@ import java.util.List;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Booking {
 
 
@@ -28,6 +30,7 @@ public class Booking {
 
 
     @OneToOne(fetch = FetchType.LAZY)
+    @JsonManagedReference
     @JoinColumn(name = "quotation_id", nullable = false, unique = true) // enforce uniqueness
     private Quotation quotation;
 
@@ -66,5 +69,21 @@ public class Booking {
     public void addPayment(Payments payment) {
         payments.add(payment);
         payment.setBooking(this);
+    }
+
+
+    // ✅ ADD THIS: Staff assignments
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BookingStaffAssignment> staffAssignments = new ArrayList<>();
+
+    // ✅ ADD THIS: Staff assignment methods
+    public void addStaffAssignment(BookingStaffAssignment assignment) {
+        staffAssignments.add(assignment);
+        assignment.setBooking(this);
+    }
+
+    public void removeStaffAssignment(BookingStaffAssignment assignment) {
+        staffAssignments.remove(assignment);
+        assignment.setBooking(null);
     }
 }

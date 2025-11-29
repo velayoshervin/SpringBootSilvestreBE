@@ -34,9 +34,6 @@ private String title;
 
 private boolean allDay;
 
-//private LocalDateTime startTime;
-//
-//private LocalDateTime endTime;
     private OffsetDateTime startTime;
     private OffsetDateTime endTime;
 
